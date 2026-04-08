@@ -166,3 +166,8 @@ def natal_chart(request: NatalChartRequest):
             },
         },
     }
+
+
+@app.post("/api/v5/chart-data/birth-chart")
+def natal_chart_v5(request: NatalChartRequest):
+    return natal_chart(request)

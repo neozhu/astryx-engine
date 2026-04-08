@@ -211,14 +211,6 @@ async function fetchJson<T>(url: string, init?: RequestInit) {
   return (await response.json()) as T;
 }
 
-type AstrologyProvider = "rapidapi" | "kerykeion-local";
-
-function getAstrologyProvider(): AstrologyProvider {
-  return process.env.ASTROLOGY_PROVIDER === "kerykeion-local"
-    ? "kerykeion-local"
-    : "rapidapi";
-}
-
 export function buildAstrologerPayload(
   input: ParsedReadingInput,
   location: GeoNamesEntry,
@@ -250,31 +242,10 @@ async function fetchAstrologerChart<T>(
   timezoneId: string,
   asOf?: string,
 ) {
-  if (getAstrologyProvider() === "kerykeion-local") {
-    const localApiUrl = process.env.LOCAL_ASTROLOGY_API_URL?.trim();
+  const localApiUrl = process.env.LOCAL_ASTROLOGY_API_URL?.trim();
 
-    if (!localApiUrl) {
-      throw new Error("Missing LOCAL_ASTROLOGY_API_URL");
-    }
-
-    if (endpointPath !== "/api/v5/chart-data/birth-chart") {
-      throw new Error(`Unsupported local astrology endpoint: ${endpointPath}`);
-    }
-
-    return fetchJson<T>(`${localApiUrl}/api/v1/chart/natal`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(buildAstrologerPayload(input, location, timezoneId)),
-    });
-  }
-
-  const apiKey = process.env.RAPIDAPI_KEY;
-  const rapidApiHost = process.env.RAPIDAPI_HOST ?? "astrologer.p.rapidapi.com";
-
-  if (!apiKey) {
-    throw new Error("Missing RAPIDAPI_KEY");
+  if (!localApiUrl) {
+    throw new Error("Missing LOCAL_ASTROLOGY_API_URL");
   }
 
   const payload = {
@@ -282,12 +253,10 @@ async function fetchAstrologerChart<T>(
     ...(asOf ? { transit_at: asOf } : {}),
   };
 
-  return fetchJson<T>(`https://${rapidApiHost}${endpointPath}`, {
+  return fetchJson<T>(`${localApiUrl}${endpointPath}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-RapidAPI-Key": apiKey,
-      "X-RapidAPI-Host": rapidApiHost,
     },
     body: JSON.stringify(payload),
   });
@@ -593,7 +562,6 @@ export async function buildAstrologyBundle(
   asOfOverride?: string,
 ): Promise<AstrologyBundle> {
   const normalizedBirth = normalizeBirthInput(input);
-  const provider = getAstrologyProvider();
   const asOf = asOfOverride ?? new Date().toISOString();
   const chartRequest = buildAstrologerPayload(
     normalizedBirth,
@@ -607,34 +575,25 @@ export async function buildAstrologyBundle(
     resolvedLocation.timezoneId,
   );
 
-  const natalContext =
-    provider === "rapidapi"
-      ? await fetchNatalContext(
-          normalizedBirth,
-          resolvedLocation.location,
-          resolvedLocation.timezoneId,
-        ).catch(() => null)
-      : null;
+  const natalContext = await fetchNatalContext(
+    normalizedBirth,
+    resolvedLocation.location,
+    resolvedLocation.timezoneId,
+  ).catch(() => null);
 
-  const transitChart =
-    provider === "rapidapi"
-      ? await fetchOptionalTransitChart(
-          normalizedBirth,
-          resolvedLocation.location,
-          resolvedLocation.timezoneId,
-          asOf,
-        )
-      : null;
+  const transitChart = await fetchOptionalTransitChart(
+    normalizedBirth,
+    resolvedLocation.location,
+    resolvedLocation.timezoneId,
+    asOf,
+  );
 
-  const transitContext =
-    provider === "rapidapi"
-      ? await fetchOptionalTransitContext(
-          normalizedBirth,
-          resolvedLocation.location,
-          resolvedLocation.timezoneId,
-          asOf,
-        )
-      : null;
+  const transitContext = await fetchOptionalTransitContext(
+    normalizedBirth,
+    resolvedLocation.location,
+    resolvedLocation.timezoneId,
+    asOf,
+  );
 
   return {
     normalizedBirth,

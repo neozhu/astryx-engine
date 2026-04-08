@@ -1,82 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Astryx Engine
+
+Astryx Engine is a Next.js 16 app that generates Chinese astrology readings from birth details and postal code input. It uses a local Kerykeion-based chart service plus OpenAI Responses API calls to produce:
+
+- a primary reading summary
+- an explanation layer
+- a structured analysis layer
+- a structured forecast layer
+- up to 3 follow-up answers per session
+
+## Stack
+
+- Next.js 16 + React 19
+- OpenAI Node SDK
+- Zod
+- Vitest + Testing Library
+- Optional local FastAPI service in `services/kerykeion_api`
 
 ## Local Setup
 
-Create a `.env.local` file from `.env.example` and set:
+1. Install dependencies:
 
-- `ASTROLOGY_PROVIDER` (`rapidapi` or `kerykeion-local`)
-- `GEONAMES_USERNAME`
-- `LOCAL_ASTROLOGY_API_URL` (required when `ASTROLOGY_PROVIDER=kerykeion-local`)
-- `RAPIDAPI_KEY`
-- `RAPIDAPI_HOST`
+```bash
+npm install
+```
 
-## Getting Started
+2. Copy the sample env file:
 
-First, run the development server:
+```bash
+cp .env.local.sample .env.local
+```
+
+3. Fill in the required values in `.env.local`.
+
+4. Start the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000).
 
-## Local Kerykeion Service
+## Environment Variables
 
-To run the natal chart provider locally instead of RapidAPI:
+Create `.env.local` from `.env.local.sample`.
 
-1. Use Python `3.11.x`
-2. Start the FastAPI service:
+### Required for all setups
+
+- `GEONAMES_USERNAME`
+  Used to resolve postal-code based birth locations.
+- `OPENAI_API_KEY`
+  Used for the initial three-pass reading and follow-up answers.
+- `LOCAL_ASTROLOGY_API_URL`
+  Base URL for the local astrology API.
+
+### Optional
+
+- `OPENAI_READING_MODEL`
+  Overrides the default model. Defaults to `gpt-5.4`.
+
+## Local Astrology API
+
+The app only supports the local FastAPI service in `services/kerykeion_api`.
+
+1. Use Python `3.11.x`.
+2. Start the local service:
 
 ```bash
 uv run --project services/kerykeion_api --python 3.11 uvicorn services.kerykeion_api.app:app --host 127.0.0.1 --port 8010
 ```
 
-3. Set these env vars in `.env.local`:
+3. Set `.env.local`:
 
 ```bash
-ASTROLOGY_PROVIDER=kerykeion-local
 LOCAL_ASTROLOGY_API_URL=http://127.0.0.1:8010
+GEONAMES_USERNAME=your_geonames_username
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-The local service currently replaces the natal chart step only. Optional natal context and transit/context calls remain disabled under the local provider.
+The app sends natal chart requests to the local API and treats local transit/context endpoints as optional. If the local service does not provide those optional endpoints, the reading flow falls back to the locally available natal chart data.
 
-Its natal response also includes point degrees (`position`, `abs_pos`), full house cusps (`chart_data.houses.cusps` / `chart_data.houses.list`), and natal aspects (`chart_data.aspects.all` / `chart_data.aspects.relevant`).
+## Reading Flow
 
-## Three-Pass AI Reading
+`POST /api/reading`
 
-When `ASTROLOGY_PROVIDER=kerykeion-local`, the app:
+- validates birth date, time, and postal code input
+- resolves location from GeoNames
+- builds the astrology bundle from the local provider
+- normalizes chart payload data
+- runs 3 OpenAI structured passes for explanation, analysis, and forecast
+- returns the ready reading payload or an unavailable/location-match result
 
-1. Calls the local natal chart API.
-2. Builds a normalized `NormalizedChartPayload`.
-3. Runs three `ChatGPT 5.4` passes with `json_schema` output:
-   - explanation
-   - structured analysis
-   - structured forecast
-4. Renders one primary layer first, then exposes forecast and chart-evidence layers as expandable supporting panels.
+`POST /api/reading/follow-up`
 
-The server still keeps paragraph-based follow-up answers, but the initial ready payload now includes `primary`, `explanation`, `analysis`, and `forecast` sections for the same-page reading flow.
+- verifies the encoded session token
+- rebuilds the reading context server-side
+- answers a follow-up question in Chinese
+- rotates the token and enforces a 3-question limit
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+npm run test
+```
 
-## Learn More
+## Testing
 
-To learn more about Next.js, take a look at the following resources:
+Run the test suite with:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run test
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The repo includes frontend, flow, and reading-library tests under `test/`.

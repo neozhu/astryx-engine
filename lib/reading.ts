@@ -277,7 +277,7 @@ export function buildReadingUnavailableFromError(error: unknown) {
   }
 
   if (
-    /Missing GEONAMES_USERNAME|Missing RAPIDAPI_KEY|Missing OPENAI_API_KEY|Invalid AI reading schema|model unavailable|model_not_found|does not exist|Request failed with 5\d{2}|fetch failed/i.test(
+    /Missing GEONAMES_USERNAME|Missing LOCAL_ASTROLOGY_API_URL|Missing OPENAI_API_KEY|Invalid AI reading schema|model unavailable|model_not_found|does not exist|Request failed with 5\d{2}|fetch failed/i.test(
       message,
     )
   ) {

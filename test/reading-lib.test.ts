@@ -215,7 +215,7 @@ function createFailingAiClient(): AiReadingClient {
 
 describe("reading flow library", () => {
   beforeEach(() => {
-    process.env.READING_SESSION_SECRET = "test-secret";
+    process.env.LOCAL_ASTROLOGY_API_URL = "http://127.0.0.1:8010";
   });
 
   afterEach(() => {
@@ -229,7 +229,6 @@ describe("reading flow library", () => {
     delete process.env.RAPIDAPI_HOST;
     delete process.env.OPENAI_API_KEY;
     delete process.env.OPENAI_READING_MODEL;
-    delete process.env.READING_SESSION_SECRET;
   });
 
   it("builds an astrology bundle with one locked asOf timestamp and deterministic summaries", async () => {
@@ -2629,8 +2628,7 @@ describe("reading flow library", () => {
     expect(result.reading.title).toMatch(/双子座太阳/);
   });
 
-  it("returns a ready reading through the local kerykeion provider without RapidAPI credentials", async () => {
-    process.env.ASTROLOGY_PROVIDER = "kerykeion-local";
+  it("returns a ready reading through the local kerykeion provider by default without RapidAPI credentials", async () => {
     process.env.LOCAL_ASTROLOGY_API_URL = "http://127.0.0.1:8010";
     process.env.GEONAMES_USERNAME = "new163";
 
@@ -2660,7 +2658,7 @@ describe("reading flow library", () => {
         });
       }
 
-      if (url === "http://127.0.0.1:8010/api/v1/chart/natal") {
+      if (url === "http://127.0.0.1:8010/api/v5/chart-data/birth-chart") {
         return Response.json({
           status: "OK",
           chart_data: {
@@ -2706,9 +2704,16 @@ describe("reading flow library", () => {
     expect(result.reading.evidence[1]?.value).toBe("Asia/Shanghai");
     expect(
       fetchMock.mock.calls.some(
-        ([request]) => request.toString() === "http://127.0.0.1:8010/api/v1/chart/natal",
+        ([request]) =>
+          request.toString() ===
+          "http://127.0.0.1:8010/api/v5/chart-data/birth-chart",
       ),
     ).toBe(true);
+    expect(
+      fetchMock.mock.calls.some(([request]) =>
+        request.toString().includes("rapidapi.com"),
+      ),
+    ).toBe(false);
   });
 
   it("returns a location-match outcome when geonames remains ambiguous", async () => {
