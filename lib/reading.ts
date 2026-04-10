@@ -974,6 +974,10 @@ function buildPrimaryChartEvidence(payload?: NormalizedChartPayload) {
 
   return pointEntries
     .map(([label, sign]) => {
+      if (!sign) {
+        return null;
+      }
+
       const normalizedSign = humanizeSign(sign);
       return normalizedSign ? `${label}${normalizedSign}` : null;
     })

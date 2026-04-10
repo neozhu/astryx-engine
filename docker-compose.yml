@@ -1,0 +1,49 @@
+services:
+  astrology-api:
+    build:
+      context: ./services/kerykeion_api
+    container_name: astryx-kerykeion-api
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; import sys; sys.exit(0 if urlopen('http://127.0.0.1:8010/health').status == 200 else 1)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  web:
+    build:
+      context: .
+    container_name: astryx-engine-web
+    restart: unless-stopped
+    depends_on:
+      astrology-api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      GEONAMES_USERNAME: ${GEONAMES_USERNAME}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_READING_MODEL: ${OPENAI_READING_MODEL:-gpt-5.4}
+      LOCAL_ASTROLOGY_API_URL: http://astrology-api:8010
+      NODE_ENV: production
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
