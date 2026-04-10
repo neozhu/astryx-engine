@@ -1926,6 +1926,106 @@ describe("reading flow library", () => {
 
   it("sanitizes repeated bullets and overlong titles from the AI layer", () => {
     const result = sanitizeStructuredReading({
+      chartPayload: {
+        meta: {
+          chartType: "natal",
+          localDateTime: "1990-06-15T14:30:00-04:00",
+          utcDateTime: "1990-06-15T18:30:00Z",
+          timezone: "America/New_York",
+          birthTimePrecision: "exact",
+          locationLabel: "New York, United States",
+        },
+        points: {
+          sun: {
+            id: "sun",
+            label: "Sun",
+            sign: "Gem",
+            house: "Ninth_House",
+            position: 24.1,
+            absPos: 84.1,
+            retrograde: false,
+          },
+          moon: {
+            id: "moon",
+            label: "Moon",
+            sign: "Pis",
+            house: "Sixth_House",
+            position: 11.2,
+            absPos: 341.2,
+            retrograde: false,
+          },
+          mercury: {
+            id: "mercury",
+            label: "Mercury",
+            sign: "Can",
+            house: "Ninth_House",
+            position: 1.4,
+            absPos: 91.4,
+            retrograde: false,
+          },
+          venus: {
+            id: "venus",
+            label: "Venus",
+            sign: "Tau",
+            house: "Eighth_House",
+            position: 17.8,
+            absPos: 47.8,
+            retrograde: false,
+          },
+          mars: {
+            id: "mars",
+            label: "Mars",
+            sign: "Aqu",
+            house: "Fourth_House",
+            position: 4.3,
+            absPos: 304.3,
+            retrograde: false,
+          },
+          ascendant: {
+            id: "ascendant",
+            label: "Ascendant",
+            sign: "Lib",
+            house: "First_House",
+            position: 13.6,
+            absPos: 193.6,
+            retrograde: false,
+          },
+          mediumCoeli: {
+            id: "mediumCoeli",
+            label: "Medium Coeli",
+            sign: "Can",
+            house: "Tenth_House",
+            position: 14.4,
+            absPos: 104.4,
+            retrograde: false,
+          },
+        },
+        houses: {
+          cusps: [193.6, 223.2, 252.1],
+          list: [
+            {
+              house: "First_House",
+              sign: "Lib",
+              position: 13.6,
+              absPos: 193.6,
+            },
+          ],
+        },
+        aspects: {
+          all: [],
+          relevant: [],
+        },
+        derivedSignals: {
+          angularPoints: ["ascendant", "mediumCoeli"],
+          repeatedHouseThemes: ["Ninth_House"],
+          repeatedSignThemes: [],
+          confidenceDowngrades: [],
+        },
+        inputContext: {
+          country: "United States",
+          postalCode: "10001",
+        },
+      },
       explanation: {
         overview:
           "这张盘把双子座第九宫的太阳、双鱼座第五宫的月亮、天秤上升与金星八宫放在同一条线上，所以你会先快速理解世界，再慢慢确认真正值得信任的人与方向。这种组合强调理解、筛选、再投入。这种组合强调理解、筛选、再投入。",
@@ -2111,6 +2211,15 @@ describe("reading flow library", () => {
 
     expect(result.primary.title.length).toBeLessThanOrEqual(36);
     expect(result.primary.title).not.toContain("这是一条明显过长的标题");
+    expect(result.primary.chartEvidence).toEqual([
+      "太阳双子座",
+      "月亮双鱼座",
+      "水星巨蟹座",
+      "金星金牛座",
+      "火星水瓶座",
+      "上升天秤座",
+      "MC巨蟹座",
+    ]);
     expect(result.analysis.sections.personality.bullets).toEqual([
       "先理解，再决定靠多近。",
     ]);
@@ -2714,6 +2823,253 @@ describe("reading flow library", () => {
         request.toString().includes("rapidapi.com"),
       ),
     ).toBe(false);
+  });
+
+  it("preserves the full initial paragraph for the primary summary", () => {
+    const longSummary =
+      "之所以会得出你是一个外冷内热、表面直接但内在很复杂的类型，首先是因为本命盘里有几个很清楚的信号同时出现：太阳在水瓶座落第十二宫，说明你的核心驱动力并不喜欢一直摆在台面上，而是更习惯先在独处里消化感受，再决定要不要表达。";
+
+    const result = sanitizeStructuredReading({
+      initialParagraphs: [longSummary],
+      chartPayload: {
+        meta: {
+          chartType: "natal",
+          localDateTime: "1990-06-15T14:30:00-04:00",
+          utcDateTime: "1990-06-15T18:30:00Z",
+          timezone: "America/New_York",
+          birthTimePrecision: "exact",
+          locationLabel: "New York, United States",
+        },
+        points: {
+          sun: {
+            id: "sun",
+            label: "Sun",
+            sign: "Aqu",
+            house: "Twelfth_House",
+            position: 24.1,
+            absPos: 324.1,
+            retrograde: false,
+          },
+          moon: {
+            id: "moon",
+            label: "Moon",
+            sign: "Cap",
+            house: "Tenth_House",
+            position: 11.2,
+            absPos: 281.2,
+            retrograde: false,
+          },
+          mercury: {
+            id: "mercury",
+            label: "Mercury",
+            sign: "Pis",
+            house: "Twelfth_House",
+            position: 1.4,
+            absPos: 331.4,
+            retrograde: false,
+          },
+          venus: {
+            id: "venus",
+            label: "Venus",
+            sign: "Ari",
+            house: "First_House",
+            position: 17.8,
+            absPos: 17.8,
+            retrograde: false,
+          },
+          mars: {
+            id: "mars",
+            label: "Mars",
+            sign: "Vir",
+            house: "Sixth_House",
+            position: 4.3,
+            absPos: 154.3,
+            retrograde: false,
+          },
+          ascendant: {
+            id: "ascendant",
+            label: "Ascendant",
+            sign: "Ari",
+            house: "First_House",
+            position: 13.6,
+            absPos: 13.6,
+            retrograde: false,
+          },
+          mediumCoeli: {
+            id: "mediumCoeli",
+            label: "Medium Coeli",
+            sign: "Cap",
+            house: "Tenth_House",
+            position: 14.4,
+            absPos: 284.4,
+            retrograde: false,
+          },
+        },
+        aspects: [],
+        derivedSignals: {
+          stelliums: [],
+          repeatedHouseThemes: [],
+          dominantElements: [],
+          dominantModalities: [],
+        },
+      },
+      explanation: {
+        overview: "概览",
+        keyPatterns: [
+          {
+            title: "模式一",
+            explanation: "解释一",
+            evidence: [{ label: "证据", refs: ["points.sun.sign=Aqu"] }],
+          },
+        ],
+        terminologyNotes: ["说明"],
+        caveats: ["提示"],
+      },
+      analysis: {
+        sections: {
+          personality: {
+            summary: "你会先在内在世界里完成判断，再决定如何对外表达。",
+            bullets: ["情绪处理偏向先沉淀后行动。"],
+            evidence: [{ label: "太阳十二宫", refs: ["points.sun.house=Twelfth_House"] }],
+            confidence: "high",
+          },
+          behaviorAndThinking: {
+            summary: "思考方式更依赖感受整合。",
+            bullets: ["表达前需要先确认自己的真实判断。"],
+            evidence: [{ label: "水星双鱼", refs: ["points.mercury.sign=Pis"] }],
+            confidence: "medium",
+          },
+          relationshipsAndEmotions: {
+            summary: "靠近关系时速度快，但内在筛选并不慢。",
+            bullets: ["外在直接，内在评估细。"],
+            evidence: [{ label: "金星白羊", refs: ["points.venus.sign=Ari"] }],
+            confidence: "high",
+          },
+          careerAndGrowth: {
+            summary: "现实承担感会持续拉高你的自我要求。",
+            bullets: ["做事会想把细节落稳。"],
+            evidence: [{ label: "MC摩羯", refs: ["points.mediumCoeli.sign=Cap"] }],
+            confidence: "medium",
+          },
+          strengthsAndRisks: {
+            summary: "优势在于能同时保留敏感和执行力。",
+            bullets: ["风险在于把压力长期留在自己体内。"],
+            evidence: [{ label: "火星处女", refs: ["points.mars.sign=Vir"] }],
+            confidence: "medium",
+          },
+          lifeThemes: {
+            summary: "在独处沉淀与现实承担之间找到自己的位置",
+            bullets: ["学会在内隐和行动之间切换节奏。"],
+            evidence: [{ label: "太阳十二宫", refs: ["points.sun.house=Twelfth_House"] }],
+            confidence: "high",
+          },
+          timeDimension: {
+            summary: "当前更适合稳住节奏后再推进关键决定。",
+            bullets: ["先整理内部感受，再处理外部动作。"],
+            evidence: [{ label: "月亮摩羯", refs: ["points.moon.sign=Cap"] }],
+            confidence: "medium",
+          },
+        },
+      },
+      forecast: {
+        nearTerm: {
+          love: {
+            theme: "关系试探",
+            forecast: "先看回应质量。",
+            opportunities: ["辨认真正有行动的人"],
+            risks: ["太快推进"],
+            timingNotes: ["先慢后快"],
+            evidence: [{ label: "金星白羊", refs: ["points.venus.sign=Ari"] }],
+            confidence: "medium",
+          },
+          career: {
+            theme: "节奏校准",
+            forecast: "先把日常结构收紧。",
+            opportunities: ["整理优先级"],
+            risks: ["把压力堆成内耗"],
+            timingNotes: ["先稳后扩"],
+            evidence: [{ label: "火星处女", refs: ["points.mars.sign=Vir"] }],
+            confidence: "medium",
+          },
+          emotion: {
+            theme: "内在整理",
+            forecast: "需要更多独处恢复。",
+            opportunities: ["把感受说清楚"],
+            risks: ["长期压着不说"],
+            timingNotes: ["先沉淀再表达"],
+            evidence: [{ label: "太阳十二宫", refs: ["points.sun.house=Twelfth_House"] }],
+            confidence: "high",
+          },
+          social: {
+            theme: "边界清理",
+            forecast: "减少无效消耗。",
+            opportunities: ["保留高质量连接"],
+            risks: ["表面强硬被误读"],
+            timingNotes: ["先筛再留"],
+            evidence: [{ label: "上升白羊", refs: ["points.ascendant.sign=Ari"] }],
+            confidence: "medium",
+          },
+          finance: {
+            theme: "资源收拢",
+            forecast: "更适合保守配置。",
+            opportunities: ["优化预算"],
+            risks: ["压力型消费"],
+            timingNotes: ["先整理现状"],
+            evidence: [{ label: "月亮摩羯", refs: ["points.moon.sign=Cap"] }],
+            confidence: "low",
+          },
+        },
+        yearAhead: {
+          love: {
+            theme: "关系定向",
+            forecast: "会更明确自己要什么。",
+            opportunities: ["减少模糊关系"],
+            risks: ["用强硬掩盖脆弱"],
+            timingNotes: ["后段更清楚"],
+            evidence: [{ label: "金星白羊", refs: ["points.venus.sign=Ari"] }],
+            confidence: "medium",
+          },
+          career: {
+            theme: "长期承担",
+            forecast: "现实责任感会变强。",
+            opportunities: ["建立稳定产出"],
+            risks: ["过度苛责自己"],
+            timingNotes: ["循序加码"],
+            evidence: [{ label: "MC摩羯", refs: ["points.mediumCoeli.sign=Cap"] }],
+            confidence: "medium",
+          },
+          emotion: {
+            theme: "情绪稳固",
+            forecast: "更懂得安排恢复节奏。",
+            opportunities: ["减少闷压"],
+            risks: ["独自硬扛"],
+            timingNotes: ["先识别后调整"],
+            evidence: [{ label: "太阳十二宫", refs: ["points.sun.house=Twelfth_House"] }],
+            confidence: "medium",
+          },
+          social: {
+            theme: "关系筛选",
+            forecast: "圈层会逐渐收敛。",
+            opportunities: ["留下真正可靠的人"],
+            risks: ["外冷感加强距离"],
+            timingNotes: ["前紧后稳"],
+            evidence: [{ label: "上升白羊", refs: ["points.ascendant.sign=Ari"] }],
+            confidence: "medium",
+          },
+          finance: {
+            theme: "结构整理",
+            forecast: "更适合慢慢做长期安排。",
+            opportunities: ["建立更稳的底盘"],
+            risks: ["临时冲动破坏计划"],
+            timingNotes: ["逐步调整"],
+            evidence: [{ label: "火星处女", refs: ["points.mars.sign=Vir"] }],
+            confidence: "low",
+          },
+        },
+      },
+    });
+
+    expect(result.primary.summary).toBe(longSummary);
   });
 
   it("returns a location-match outcome when geonames remains ambiguous", async () => {

@@ -19,7 +19,10 @@ import {
   type StructuredAnalysisViewModel,
   type StructuredForecastViewModel,
 } from "@/lib/ai-reading";
-import { buildNormalizedChartPayload } from "@/lib/chart-payload";
+import {
+  buildNormalizedChartPayload,
+  type NormalizedChartPayload,
+} from "@/lib/chart-payload";
 import {
   rotateSessionToken,
   signSessionToken,
@@ -157,6 +160,7 @@ export type PrimaryReadingViewModel = {
   title: string;
   summary: string;
   highlights: string[];
+  chartEvidence: string[];
 };
 
 export const FOLLOW_UP_OPTIONS = [
@@ -927,6 +931,7 @@ function buildPrimaryReadingViewModel(
   initialParagraphs: string[],
   analysis: StructuredAnalysisViewModel,
   forecast: StructuredForecastViewModel,
+  chartPayload?: NormalizedChartPayload,
 ): PrimaryReadingViewModel {
   const compressedTitle = compressPrimaryTitle(
     analysis.sections.lifeThemes.summary,
@@ -936,10 +941,8 @@ function buildPrimaryReadingViewModel(
 
   return {
     title: compressedTitle,
-    summary: truncateChineseText(
-      collapseRepeatedSentences(primarySummarySource),
-      72,
-    ),
+    summary: collapseRepeatedSentences(primarySummarySource).trim(),
+    chartEvidence: buildPrimaryChartEvidence(chartPayload),
     highlights: [
       analysis.sections.relationshipsAndEmotions.bullets[0],
       analysis.sections.careerAndGrowth.bullets[0],
@@ -947,6 +950,34 @@ function buildPrimaryReadingViewModel(
       forecast.nearTerm.career.theme,
     ].filter((value): value is string => Boolean(value)).slice(0, 4),
   };
+}
+
+function buildPrimaryChartEvidence(payload?: NormalizedChartPayload) {
+  if (!payload) {
+    return [];
+  }
+
+  const includeAngular = payload.meta.birthTimePrecision === "exact";
+  const pointEntries = [
+    ["太阳", payload.points.sun.sign],
+    ["月亮", payload.points.moon.sign],
+    ["水星", payload.points.mercury.sign],
+    ["金星", payload.points.venus.sign],
+    ["火星", payload.points.mars.sign],
+    ...(includeAngular
+      ? [
+          ["上升", payload.points.ascendant.sign],
+          ["MC", payload.points.mediumCoeli.sign],
+        ]
+      : []),
+  ] as const;
+
+  return pointEntries
+    .map(([label, sign]) => {
+      const normalizedSign = humanizeSign(sign);
+      return normalizedSign ? `${label}${normalizedSign}` : null;
+    })
+    .filter((value): value is string => Boolean(value));
 }
 
 function compressPrimaryTitle(input: string) {
@@ -1251,6 +1282,7 @@ export function sanitizeStructuredReading(input: {
   explanation: ExplanationViewModel;
   analysis: StructuredAnalysisViewModel;
   forecast: StructuredForecastViewModel;
+  chartPayload?: NormalizedChartPayload;
 }) {
   const explanation = sanitizeExplanationViewModel(input.explanation);
   const analysis = sanitizeAnalysisViewModel(input.analysis);
@@ -1261,6 +1293,7 @@ export function sanitizeStructuredReading(input: {
       input.initialParagraphs ?? [],
       analysis,
       forecast,
+      input.chartPayload,
     ),
     explanation,
     analysis,
@@ -1283,7 +1316,7 @@ async function buildInitialReading(
   });
 
   const [aiReadingResult, explanation, analysis, forecast] = await Promise.all([
-    buildInitialAiReading(bundle, aiClient),
+    buildInitialAiReading(bundle, chartPayload, aiClient),
     buildExplanationReading(chartPayload, aiClient),
     buildStructuredAnalysis(chartPayload, aiClient),
     buildStructuredForecast(chartPayload, aiClient),
@@ -1294,6 +1327,7 @@ async function buildInitialReading(
     explanation,
     analysis,
     forecast,
+    chartPayload,
   });
   const reading = fallbackReading;
 
@@ -1626,7 +1660,9 @@ function isPrimaryReadingViewModel(value: unknown): value is PrimaryReadingViewM
     typeof value.title === "string" &&
     typeof value.summary === "string" &&
     Array.isArray(value.highlights) &&
-    value.highlights.every((item) => typeof item === "string")
+    value.highlights.every((item) => typeof item === "string") &&
+    Array.isArray(value.chartEvidence) &&
+    value.chartEvidence.every((item) => typeof item === "string")
   );
 }
 

@@ -9,6 +9,7 @@ function createReadyResult(): Extract<ReadingOutcome, { kind: "ready" }> {
     primary: {
       title: "理解世界，也要筛选真正可信的连接",
       summary: "你的人格重心在好奇心和关系分辨力之间摆动。",
+      chartEvidence: ["太阳双子", "月亮双鱼", "水星巨蟹", "金星金牛", "上升天秤", "MC巨蟹"],
       highlights: [
         "先通过交流建立连接，再决定是否真正投入。",
         "职业路径适合兼顾表达、判断和长期积累。",
@@ -190,8 +191,26 @@ describe("Reading result state", () => {
     );
 
     expect(screen.getByText("核心解读")).toBeInTheDocument();
+    expect(screen.getByText("太阳双子")).toBeInTheDocument();
+    expect(screen.getByText("上升天秤")).toBeInTheDocument();
     expect(screen.getByText("展开看星盘依据")).toBeInTheDocument();
     expect(screen.getByText("展开看近期与年度预测")).toBeInTheDocument();
+  });
+
+  it("renders the full primary summary without collapsing it into a short excerpt", () => {
+    const result = createReadyResult();
+    result.primary.summary =
+      "之所以会得出你是一个外冷内热、表面直接但内在很复杂的类型，首先是因为本命盘里有几个很清楚的信号同时出现：太阳在水瓶座落第十二宫，说明你的核心驱动力并不喜欢一直摆在台面上，而是更习惯先在独处里消化感受，再决定要不要表达。";
+
+    render(
+      <ReadingStartPage
+        onSubmit={() => undefined}
+        isSubmitting={false}
+        result={result}
+      />,
+    );
+
+    expect(screen.getByText(result.primary.summary)).toBeInTheDocument();
   });
 
   it("shows only the first few analysis sections and keeps the rest collapsed", () => {
