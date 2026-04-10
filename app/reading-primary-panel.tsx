@@ -13,6 +13,18 @@ export function ReadingPrimaryPanel({
       <h2 className="font-serif text-3xl leading-tight text-foreground">
         {primary.title}
       </h2>
+      {primary.chartEvidence.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {primary.chartEvidence.map((item) => (
+            <span
+              key={item}
+              className="rounded-full border border-accent/20 bg-accent/5 px-3 py-1 text-xs tracking-[0.08em] text-accent"
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : null}
       <p className="text-base leading-8 text-foreground/92">
         {primary.summary}
       </p>

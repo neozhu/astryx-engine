@@ -10,7 +10,7 @@ describe("Reading generating state", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /开始你的解读/i,
+        name: /开启你的星盘/i,
       }),
     ).toBeInTheDocument();
     expect(

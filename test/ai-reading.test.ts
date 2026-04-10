@@ -267,7 +267,11 @@ describe("ai-reading", () => {
       }),
     );
 
-    const result = await buildInitialAiReading(createBundle(), client);
+    const result = await buildInitialAiReading(
+      createBundle(),
+      createPayload(),
+      client,
+    );
 
     expect(result.paragraphs).toEqual([
       "You are in a stretch that rewards steadier pacing.",
@@ -291,7 +295,7 @@ describe("ai-reading", () => {
     );
 
     await expect(
-      buildInitialAiReading(createBundle(), client),
+      buildInitialAiReading(createBundle(), createPayload(), client),
     ).rejects.toThrow(/invalid ai reading schema/i);
   });
 
@@ -303,7 +307,7 @@ describe("ai-reading", () => {
     );
 
     await expect(
-      buildInitialAiReading(createBundle(), client),
+      buildInitialAiReading(createBundle(), createPayload(), client),
     ).rejects.toThrow(/invalid ai reading schema/i);
   });
 
@@ -323,7 +327,7 @@ describe("ai-reading", () => {
     );
 
     await expect(
-      buildInitialAiReading(createBundle(), client),
+      buildInitialAiReading(createBundle(), createPayload(), client),
     ).rejects.toThrow(/invalid ai reading schema/i);
   });
 
@@ -428,6 +432,7 @@ describe("ai-reading", () => {
           minute: null,
         },
       },
+      createPayload(),
       client,
     );
 
@@ -440,8 +445,11 @@ describe("ai-reading", () => {
       .join("\n");
 
     expect(request.instructions).toMatch(/请仅依据提供的服务端星盘数据编写中文占星解读/);
+    expect(request.instructions).toMatch(/第一段必须直接解释为什么会得出这个结果/);
+    expect(request.instructions).toMatch(/太阳、月亮、水星、金星、火星、上升、MC\/天顶/);
     expect(request.instructions).toMatch(/弱化对时间敏感的判断/);
     expect(developerText).toContain('"birthTimePrecision": "unknown"');
+    expect(developerText).toContain('"points"');
   });
 
   it("keeps prior user turns out of developer-owned content", async () => {

@@ -577,18 +577,21 @@ async function callJsonSchemaModel(
 
 export async function buildInitialAiReading(
   bundle: AstrologyBundle,
+  chartPayload: NormalizedChartPayload,
   client?: AiReadingClient,
 ) {
   return parseStructuredResponse(
     await callJsonSchemaModel(
       {
         instructions:
-          "请仅依据提供的服务端星盘数据编写中文占星解读。返回 JSON，且只包含一个 paragraphs 数组，数组内提供 2 到 6 段中文内容。不要添加 markdown、标题或额外字段。如果 birthTimePrecision 不是 exact，请弱化对时间敏感的判断，避免过度强调宫位、上升星座、Ascendant 或精确时机结论。",
+          "请仅依据提供的服务端星盘数据编写中文占星解读。返回 JSON，且只包含一个 paragraphs 数组，数组内提供 2 到 6 段中文内容。不要添加 markdown、标题或额外字段。第一段必须直接解释为什么会得出这个结果，明确点出 3 到 5 个实际存在的本命盘信号，优先从太阳、月亮、水星、金星、火星、上升、MC/天顶中选取，并用自然中文把这些信号和结论连起来，而不是只给抽象判断。如果 birthTimePrecision 不是 exact，请弱化对时间敏感的判断，避免过度强调宫位、上升星座、Ascendant 或精确时机结论。",
         responseSchemaName: "initial_reading_paragraphs",
         responseSchema: buildParagraphJsonSchema(2, 6),
         input: [
           buildDeveloperInput("Server-owned astrology bundle JSON:"),
           buildDeveloperInput(serializeBundle(bundle)),
+          buildDeveloperInput("NormalizedChartPayload JSON:"),
+          buildDeveloperInput(JSON.stringify(chartPayload, null, 2)),
         ],
       },
       client,

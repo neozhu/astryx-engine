@@ -251,11 +251,8 @@ export default function ReadingStartPage({
               精准星盘设定
             </p>
             <h1 className="max-w-3xl font-serif text-4xl leading-[0.95] font-medium tracking-[-0.03em] text-foreground sm:text-6xl">
-              开始你的解读
+              开启你的星盘
             </h1>
-            <p className="max-w-2xl text-base leading-7 text-muted sm:text-lg sm:leading-8">
-              我们只收集锁定一次星盘所必需的信息：出生日期、出生时间和中国出生地邮编。系统会在服务端解析邮编，统一锁定城市、时区和 UTC 快照。
-            </p>
           </div>
 
           <div className="relative">

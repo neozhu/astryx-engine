@@ -10,6 +10,7 @@ const readyReading: Extract<ReadingOutcome, { kind: "ready" }> = {
   primary: {
     title: "理解世界，也要筛选真正可信的连接",
     summary: "你的人格重心在好奇心和关系分辨力之间摆动。",
+    chartEvidence: ["太阳双子", "月亮双鱼", "水星巨蟹", "金星金牛"],
     highlights: ["先通过交流建立连接，再决定是否真正投入。"],
   },
   explanation: {
@@ -190,7 +191,7 @@ describe("Reading start page", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /开始你的解读/i,
+        name: /开启你的星盘/i,
       }),
     ).toBeInTheDocument();
 

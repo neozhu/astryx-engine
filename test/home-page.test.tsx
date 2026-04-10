@@ -26,6 +26,7 @@ function createReadyPayload(
     primary: {
       title: "理解世界，也要筛选真正可信的连接",
       summary: "解读会直接落在判断和解释上，而不是停留在结果状态页。",
+      chartEvidence: ["太阳双子", "月亮双鱼", "水星巨蟹", "金星金牛", "上升天秤", "MC巨蟹"],
       highlights: ["这是第一段 AI 解读。"],
     },
     explanation: {
@@ -198,7 +199,7 @@ describe("Home page", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /开始你的解读/i,
+        name: /开启你的星盘/i,
       }),
     ).toBeInTheDocument();
 
@@ -227,7 +228,7 @@ describe("Home page", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("link", {
-        name: /开始你的解读/i,
+        name: /开启你的星盘/i,
       }),
     ).not.toBeInTheDocument();
 
@@ -397,6 +398,7 @@ describe("Home page", () => {
         primary: {
           title: "旧响应",
           summary: "这个较早返回的响应不应该覆盖更新的结果。",
+          chartEvidence: ["太阳双子"],
           highlights: ["old"],
         },
       }),
