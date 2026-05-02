@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import ReadingStartPage from "@/app/reading-start-page";
 import {
@@ -17,14 +17,49 @@ function getField(formData: FormData, name: string) {
   return typeof value === "string" ? value : "";
 }
 
+function getBrowserCoordinates() {
+  return new Promise<GeolocationCoordinates>((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Browser geolocation is unavailable."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve(position.coords);
+      },
+      () => {
+        reject(new Error("Browser geolocation was not allowed."));
+      },
+    );
+  });
+}
+
 export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingFollowUp, setIsSubmittingFollowUp] = useState(false);
   const [result, setResult] = useState<ReadingOutcome | null>(null);
   const [followUpTurns, setFollowUpTurns] = useState<FollowUpTurn[]>([]);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
+  const coordinatesPromiseRef = useRef<Promise<GeolocationCoordinates> | null>(
+    null,
+  );
+  const coordinatesRef = useRef<GeolocationCoordinates | null>(null);
   const latestRequestIdRef = useRef(0);
   const latestFollowUpRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    const coordinatesPromise = getBrowserCoordinates();
+    coordinatesPromiseRef.current = coordinatesPromise;
+
+    coordinatesPromise
+      .then((coordinates) => {
+        coordinatesRef.current = coordinates;
+      })
+      .catch(() => {
+        coordinatesRef.current = null;
+      });
+  }, []);
 
   function getDisplayedQuestion(topic: FollowUpTopic, question: string) {
     if (topic === "love") {
@@ -56,13 +91,21 @@ export default function Home() {
     latestRequestIdRef.current = requestId;
 
     try {
+      const coordinates =
+        coordinatesRef.current ?? (await coordinatesPromiseRef.current);
+
+      if (!coordinates) {
+        throw new Error("Browser coordinates are unavailable.");
+      }
+
       const payload = {
         year: getField(formData, "year"),
         month: getField(formData, "month"),
         day: getField(formData, "day"),
         hour: getField(formData, "hour"),
         minute: getField(formData, "minute"),
-        postalCode: getField(formData, "postalCode"),
+        latitude: String(coordinates.latitude),
+        longitude: String(coordinates.longitude),
       };
 
       const response = await fetch("/api/reading", {

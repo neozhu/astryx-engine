@@ -401,6 +401,8 @@ function getDefaultClient(): OpenAI {
 
   defaultClient = new OpenAI({
     apiKey,
+    maxRetries: 0,
+    timeout: 45_000,
   });
 
   return defaultClient;

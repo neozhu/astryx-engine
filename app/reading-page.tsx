@@ -95,7 +95,7 @@ export function ReadingPageContent({
 
       <details className="rounded-[1.5rem] border border-line/80 bg-background/35 p-4">
         <summary className="cursor-pointer text-sm font-semibold text-foreground">
-          展开看近期与年度预测
+          展开看未来一年事业与财务
         </summary>
         <div className="mt-4">
           <ReadingForecastPanel forecast={result.forecast} />

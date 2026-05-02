@@ -777,6 +777,9 @@ describe("ai-reading", () => {
     expect(request.instructions).toMatch(/Output contract:/);
     expect(request.instructions).toMatch(/nearTerm/);
     expect(request.instructions).toMatch(/love、career、emotion、social、finance/);
+    expect(request.instructions).toMatch(/年度主线/);
+    expect(request.instructions).toMatch(/关键转折/);
+    expect(request.instructions).toMatch(/启示/);
     expect(request.instructions).toMatch(/各返回 1 到 2 条即可/);
     expect(request.instructions).toMatch(/证据不足以支撑更细的时间判断/);
   });

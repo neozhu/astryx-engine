@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 
 import Home from "@/app/page";
 import type { ReadingOutcome } from "@/lib/reading";
@@ -12,6 +12,29 @@ function createDeferred<T>() {
 
   return { promise, resolve };
 }
+
+function stubCurrentPosition(
+  coordinates = { latitude: 31.37762, longitude: 120.95431 },
+) {
+  const getCurrentPosition = vi.fn((success: PositionCallback) => {
+    success({
+      coords: coordinates,
+    } as GeolocationPosition);
+  });
+
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition,
+    },
+  });
+
+  return getCurrentPosition;
+}
+
+beforeEach(() => {
+  stubCurrentPosition();
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -209,7 +232,9 @@ describe("Home page", () => {
     expect(screen.getByLabelText(/出生日/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/小时/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/分钟/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/邮编/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/邮编/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/出生地定位/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/浏览器定位/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/你对出生时间的把握程度/i),
     ).not.toBeInTheDocument();
@@ -247,6 +272,14 @@ describe("Home page", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("requests browser coordinates when the page opens", async () => {
+    render(<Home />);
+
+    await waitFor(() => {
+      expect(navigator.geolocation.getCurrentPosition).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("shows loading while the reading request is in flight and renders ready payloads", async () => {
     const pendingJson = createDeferred<Extract<ReadingOutcome, { kind: "ready" }>>();
 
@@ -264,11 +297,19 @@ describe("Home page", () => {
     );
 
     const fetchMock = vi.mocked(fetch);
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
     const requestInit = fetchMock.mock.calls[0]?.[1];
     expect(requestInit).toBeDefined();
-    expect(JSON.parse(String(requestInit?.body))).not.toHaveProperty(
-      "birthTimePrecision",
-    );
+    const submittedPayload = JSON.parse(String(requestInit?.body));
+    expect(submittedPayload).toMatchObject({
+      latitude: "31.37762",
+      longitude: "120.95431",
+    });
+    expect(submittedPayload).not.toHaveProperty("postalCode");
+    expect(submittedPayload).not.toHaveProperty("birthTimePrecision");
+    expect(navigator.geolocation.getCurrentPosition).toHaveBeenCalledTimes(1);
 
     expect(
       screen.getAllByRole("button", { name: /正在生成\.\.\./i }).every(
@@ -583,6 +624,9 @@ describe("Home page", () => {
     );
 
     const fetchMock = vi.mocked(fetch);
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
     const requestInit = fetchMock.mock.calls[0]?.[1];
     expect(requestInit).toBeDefined();
     expect(JSON.parse(String(requestInit?.body))).not.toHaveProperty(

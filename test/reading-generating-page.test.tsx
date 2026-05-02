@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import ReadingStartPage from "@/app/reading-start-page";
 
 describe("Reading generating state", () => {
-  it("shows staged progress inline under the form while submitting", () => {
+  it("shows a simple loading message inline under the form while submitting", () => {
     render(
       <ReadingStartPage onSubmit={() => undefined} isSubmitting result={null} />,
     );
@@ -18,9 +18,10 @@ describe("Reading generating state", () => {
         name: /正在生成你的解读/i,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/锁定出生信息/i)).toBeInTheDocument();
-    expect(screen.getByText(/校准时间精度/i)).toBeInTheDocument();
-    expect(screen.getByText(/整理本次解读/i)).toBeInTheDocument();
+    expect(screen.queryByText(/步骤/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/锁定出生信息/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/校准时间精度/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/整理本次解读/i)).not.toBeInTheDocument();
 
     const form = document.getElementById("reading-start-form");
     const loadingHeading = screen.getByRole("heading", {

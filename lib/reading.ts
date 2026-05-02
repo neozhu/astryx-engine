@@ -134,6 +134,8 @@ export type ParsedReadingInput = {
   day: number;
   hour: number | null;
   minute: number | null;
+  latitude?: number;
+  longitude?: number;
   postalCode?: string;
   city: string;
   country: string;
@@ -261,13 +263,13 @@ export function buildReadingUnavailableFromError(error: unknown) {
   }
 
   if (
-    /Birth time precision is required\.|Birth date and place are required\.|Hour must be between 0 and 23\.|Minute must be between 0 and 59\.|Exact birth time requires hour and minute\.|Invalid reading request\./i.test(
+    /Birth time precision is required\.|Birth date and place are required\.|Coordinates must be valid latitude and longitude\.|Hour must be between 0 and 23\.|Minute must be between 0 and 59\.|Exact birth time requires hour and minute\.|Invalid reading request\./i.test(
       message,
     )
   ) {
     return buildReadingUnavailable({
       code: "invalid-input",
-      message: "请检查出生日期、时间和邮编后再试一次。",
+      message: "请检查出生日期、时间和定位权限后再试一次。",
       retryable: false,
     });
   }
@@ -280,8 +282,16 @@ export function buildReadingUnavailableFromError(error: unknown) {
     });
   }
 
+  if (/401 Incorrect API key|Incorrect API key provided|invalid_api_key/i.test(message)) {
+    return buildReadingUnavailable({
+      code: "service-unavailable",
+      message: "当前 AI 服务配置不可用，请检查 OpenAI API Key。",
+      retryable: true,
+    });
+  }
+
   if (
-    /Missing GEONAMES_USERNAME|Missing LOCAL_ASTROLOGY_API_URL|Missing OPENAI_API_KEY|Invalid AI reading schema|model unavailable|model_not_found|does not exist|Request failed with 5\d{2}|fetch failed/i.test(
+    /Missing GEONAMES_USERNAME|Missing LOCAL_ASTROLOGY_API_URL|Missing OPENAI_API_KEY|Invalid AI reading schema|model unavailable|model_not_found|does not exist|Request failed with 5\d{2}|fetch failed|timeout|timed out/i.test(
       message,
     )
   ) {
@@ -337,6 +347,18 @@ function parseInteger(value: SearchParamValue) {
 
 function parseText(value: SearchParamValue) {
   return takeFirst(value)?.trim() ?? "";
+}
+
+function parseNumber(value: SearchParamValue) {
+  const raw = takeFirst(value)?.trim();
+
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = Number(raw);
+
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function normalizeText(value: string) {
@@ -412,6 +434,8 @@ export function parseReadingSearchParams(
   const city = parseText(input.city);
   const country = parseText(input.country);
   const postalCode = parseText(input.postalCode);
+  const latitude = parseNumber(input.latitude);
+  const longitude = parseNumber(input.longitude);
   const requestedPrecision = parseText(input.birthTimePrecision);
   const birthTimePrecision: BirthTimePrecision =
     requestedPrecision === "approximate" || requestedPrecision === "unknown"
@@ -427,13 +451,30 @@ export function parseReadingSearchParams(
     throw new Error("Birth date and place are required.");
   }
 
+  const rawLatitude = parseText(input.latitude);
+  const rawLongitude = parseText(input.longitude);
+  const usingCoordinates = Boolean(rawLatitude || rawLongitude);
   const usingPostalCode = Boolean(postalCode);
+  let coordinateLatitude: number | undefined;
+  let coordinateLongitude: number | undefined;
+
+  if (usingCoordinates) {
+    if (
+      !isWithinRange(latitude, -90, 90) ||
+      !isWithinRange(longitude, -180, 180)
+    ) {
+      throw new Error("Coordinates must be valid latitude and longitude.");
+    }
+
+    coordinateLatitude = latitude;
+    coordinateLongitude = longitude;
+  }
 
   if (usingPostalCode && !/^\d{6}$/.test(postalCode)) {
     throw new Error("Postal code must be six digits.");
   }
 
-  if (!usingPostalCode && (!city || !country)) {
+  if (!usingCoordinates && !usingPostalCode && (!city || !country)) {
     throw new Error("Birth date and place are required.");
   }
 
@@ -457,9 +498,11 @@ export function parseReadingSearchParams(
     day,
     hour: parsedHour,
     minute: parsedMinute,
+    latitude: coordinateLatitude,
+    longitude: coordinateLongitude,
     postalCode: usingPostalCode ? postalCode : undefined,
-    city: usingPostalCode ? "" : city,
-    country: usingPostalCode ? "China" : country,
+    city: usingCoordinates || usingPostalCode ? "" : city,
+    country: usingCoordinates ? "" : usingPostalCode ? "China" : country,
     birthTimePrecision,
   };
 
@@ -506,6 +549,38 @@ async function resolveLocation(
 
   if (!username) {
     return { kind: "reading-unavailable" };
+  }
+
+  if (input.latitude !== undefined && input.longitude !== undefined) {
+    const latitude = String(input.latitude);
+    const longitude = String(input.longitude);
+    const timezoneUrl =
+      `http://api.geonames.org/timezoneJSON?lat=${encodeURIComponent(latitude)}` +
+      `&lng=${encodeURIComponent(longitude)}` +
+      `&username=${encodeURIComponent(username)}`;
+
+    const timezoneResponse = await fetchJson<{
+      timezoneId?: string;
+      countryName?: string;
+      countryCode?: string;
+    }>(timezoneUrl);
+
+    if (!timezoneResponse.timezoneId) {
+      return { kind: "reading-unavailable" };
+    }
+
+    return {
+      kind: "resolved",
+      location: {
+        geonameId: 0,
+        name: "浏览器定位",
+        countryName: timezoneResponse.countryName,
+        countryCode: timezoneResponse.countryCode,
+        lat: latitude,
+        lng: longitude,
+      },
+      timezoneId: timezoneResponse.timezoneId,
+    };
   }
 
   if (input.postalCode) {

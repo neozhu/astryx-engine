@@ -106,29 +106,10 @@ function ReadingGeneratingPanel() {
           正在生成你的解读
         </h2>
         <p className="max-w-2xl text-base leading-7 text-muted sm:text-lg sm:leading-8">
-          我们正在根据中国邮编定位出生地，锁定时区快照，并整理这次解读所需的星盘事实。
+          我们正在使用浏览器定位锁定经纬度和时区快照，并整理这次解读所需的星盘事实。
         </p>
       </div>
 
-      <div className="grid gap-3">
-        {[
-          "锁定出生信息",
-          "校准时间精度",
-          "整理本次解读",
-        ].map((stage, index) => (
-          <div
-            key={stage}
-            className="rounded-[1.4rem] border border-line bg-background/60 px-4 py-4"
-          >
-            <p className="text-xs uppercase tracking-[0.22em] text-accent-strong">
-              步骤 {index + 1}
-            </p>
-            <p className="mt-2 text-base font-semibold text-foreground">
-              {stage}
-            </p>
-          </div>
-        ))}
-      </div>
     </section>
   );
 }
@@ -196,11 +177,11 @@ export default function ReadingStartPage({
       });
     }
 
-    const postalCodeInput =
-      form?.querySelector<HTMLInputElement>("#postalCode, [name='postalCode']") ?? null;
+    const yearInput =
+      form?.querySelector<HTMLInputElement>("#year, [name='year']") ?? null;
 
-    if (postalCodeInput) {
-      postalCodeInput.focus();
+    if (yearInput) {
+      yearInput.focus();
       return;
     }
 
@@ -324,31 +305,6 @@ export default function ReadingStartPage({
                     </label>
                   ))}
                 </div>
-              </section>
-
-              <section className="space-y-4">
-                <div className="space-y-1">
-                  <h2 className="font-serif text-2xl text-foreground">
-                    出生地邮编
-                  </h2>
-                  <p className="text-sm leading-6 text-muted">
-                    国家固定为中国。请输入 6 位出生地邮编，我们会据此锁定唯一地点和时区。
-                  </p>
-                </div>
-                <label className="space-y-2">
-                  <span className="text-sm font-semibold text-foreground">
-                    邮编
-                  </span>
-                  <input
-                    id="postalCode"
-                    name="postalCode"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="215300"
-                    disabled={isSubmitting}
-                    className={inputClassName}
-                  />
-                </label>
               </section>
 
               <div className="hidden sm:block">

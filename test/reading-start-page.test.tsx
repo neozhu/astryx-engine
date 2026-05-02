@@ -200,11 +200,12 @@ describe("Reading start page", () => {
     expect(screen.getByLabelText(/出生日/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/小时/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/分钟/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/邮编/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/邮编/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/国家/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/城市/i)).not.toBeInTheDocument();
 
-    expect(screen.getByText(/国家固定为中国/i)).toBeInTheDocument();
+    expect(screen.queryByText(/出生地定位/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/浏览器定位/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/你对出生时间的把握程度/i),
     ).not.toBeInTheDocument();

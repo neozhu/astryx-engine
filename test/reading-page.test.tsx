@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import ReadingStartPage from "@/app/reading-start-page";
 import type { ReadingOutcome } from "@/lib/reading";
@@ -194,7 +194,56 @@ describe("Reading result state", () => {
     expect(screen.getByText("太阳双子")).toBeInTheDocument();
     expect(screen.getByText("上升天秤")).toBeInTheDocument();
     expect(screen.getByText("展开看星盘依据")).toBeInTheDocument();
-    expect(screen.getByText("展开看近期与年度预测")).toBeInTheDocument();
+    expect(screen.getByText("展开看未来一年事业与财务")).toBeInTheDocument();
+  });
+
+  it("shows only year-ahead career and finance in the future reading", () => {
+    render(
+      <ReadingStartPage
+        onSubmit={() => undefined}
+        isSubmitting={false}
+        result={createReadyResult()}
+      />,
+    );
+
+    const futureSummary = screen.getByText("展开看未来一年事业与财务");
+    const futureDetails = futureSummary.closest("details");
+
+    expect(futureDetails).not.toBeNull();
+    fireEvent.click(futureSummary);
+
+    const futureScope = within(futureDetails as HTMLElement);
+    const forecastCards = futureScope.getAllByRole("article");
+
+    expect(futureScope.getByText("未来一年")).toBeInTheDocument();
+    expect(futureScope.getByText("事业")).toBeInTheDocument();
+    expect(futureScope.getByText("财务")).toBeInTheDocument();
+    expect(forecastCards).toHaveLength(2);
+
+    const careerCard = within(forecastCards[0]);
+    expect(careerCard.getByText("年度主线")).toBeInTheDocument();
+    expect(
+      careerCard.getByText("职业重心会逐渐向更有积累性的方向移动。"),
+    ).toBeInTheDocument();
+    expect(careerCard.getByText("年度判断")).toBeInTheDocument();
+    expect(careerCard.getByText("关键转折")).toBeInTheDocument();
+    expect(careerCard.getByText("启示")).toBeInTheDocument();
+    expect(careerCard.getByText("风险")).toBeInTheDocument();
+
+    const financeCard = within(forecastCards[1]);
+    expect(financeCard.getByText("年度主线")).toBeInTheDocument();
+    expect(
+      financeCard.getByText("财务观念会变得更长期和结构化。"),
+    ).toBeInTheDocument();
+    expect(financeCard.getByText("年度判断")).toBeInTheDocument();
+    expect(financeCard.getByText("关键转折")).toBeInTheDocument();
+    expect(financeCard.getByText("启示")).toBeInTheDocument();
+    expect(financeCard.getByText("风险")).toBeInTheDocument();
+
+    expect(futureScope.queryByText("未来 30-90 天")).not.toBeInTheDocument();
+    expect(futureScope.queryByText("感情")).not.toBeInTheDocument();
+    expect(futureScope.queryByText("情绪")).not.toBeInTheDocument();
+    expect(futureScope.queryByText("社交")).not.toBeInTheDocument();
   });
 
   it("renders the full primary summary without collapsing it into a short excerpt", () => {

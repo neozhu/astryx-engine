@@ -1,4 +1,5 @@
 import {
+  buildReadingUnavailableFromError,
   parseReadingSearchParams,
   resolveReadingFlow,
   resolveReadingFollowUp,
@@ -1614,7 +1615,7 @@ describe("reading flow library", () => {
     ).resolves.toEqual({
       kind: "reading-unavailable",
       code: "invalid-input",
-      message: "请检查出生日期、时间和邮编后再试一次。",
+      message: "请检查出生日期、时间和定位权限后再试一次。",
       retryable: false,
     });
 
@@ -1637,6 +1638,40 @@ describe("reading flow library", () => {
     expect(parsed.country).toBe("China");
   });
 
+  it("accepts browser coordinates without requiring postal code, city, or country", () => {
+    const parsed = parseReadingSearchParams({
+      year: "1990",
+      month: "6",
+      day: "15",
+      hour: "14",
+      minute: "30",
+      latitude: "31.37762",
+      longitude: "120.95431",
+      birthTimePrecision: "exact",
+    });
+
+    expect(parsed.latitude).toBe(31.37762);
+    expect(parsed.longitude).toBe(120.95431);
+    expect(parsed.postalCode).toBeUndefined();
+    expect(parsed.city).toBe("");
+    expect(parsed.country).toBe("");
+  });
+
+  it("rejects malformed browser coordinates", () => {
+    expect(() =>
+      parseReadingSearchParams({
+        year: "1990",
+        month: "6",
+        day: "15",
+        hour: "14",
+        minute: "30",
+        latitude: "91",
+        longitude: "120.95431",
+        birthTimePrecision: "exact",
+      }),
+    ).toThrow(/coordinates/i);
+  });
+
   it("rejects malformed postal codes", () => {
     expect(() =>
       parseReadingSearchParams({
@@ -1649,6 +1684,71 @@ describe("reading flow library", () => {
         birthTimePrecision: "exact",
       }),
     ).toThrow(/postal code/i);
+  });
+
+  it("maps invalid OpenAI API key errors to service unavailable", () => {
+    expect(
+      buildReadingUnavailableFromError(
+        new Error("401 Incorrect API key provided: sk-proj-***"),
+      ),
+    ).toEqual({
+      kind: "reading-unavailable",
+      code: "service-unavailable",
+      message: "当前 AI 服务配置不可用，请检查 OpenAI API Key。",
+      retryable: true,
+    });
+  });
+
+  it("resolves browser coordinates through timezone lookup without postal lookup", async () => {
+    process.env.GEONAMES_USERNAME = "new163";
+    process.env.RAPIDAPI_KEY = "test-key";
+    process.env.RAPIDAPI_HOST = "astrologer.p.rapidapi.com";
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+
+      if (url.includes("timezoneJSON")) {
+        return Response.json({
+          timezoneId: "Asia/Shanghai",
+          countryName: "China",
+          countryCode: "CN",
+        });
+      }
+
+      if (url.includes("/api/v5/chart-data/birth-chart")) {
+        return new Response("rate limited", {
+          status: 429,
+        });
+      }
+
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      resolveReadingFlow({
+        year: "1990",
+        month: "6",
+        day: "15",
+        hour: "14",
+        minute: "30",
+        latitude: "31.37762",
+        longitude: "120.95431",
+        birthTimePrecision: "exact",
+      }),
+    ).resolves.toMatchObject({
+      kind: "reading-unavailable",
+      code: "rate-limited",
+    });
+
+    const requestedUrls = fetchMock.mock.calls.map(([input]) => input.toString());
+    expect(requestedUrls).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("timezoneJSON?lat=31.37762&lng=120.95431"),
+      ]),
+    );
+    expect(requestedUrls.some((url) => url.includes("postalCodeLookupJSON"))).toBe(false);
   });
 
   it("returns a specific unavailable message when the astrologer API is rate limited", async () => {

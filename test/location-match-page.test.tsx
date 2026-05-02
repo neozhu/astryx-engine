@@ -64,11 +64,11 @@ describe("Location match state", () => {
     );
 
     const form = document.getElementById("reading-start-form") as HTMLFormElement;
-    const postalCodeInput = screen.getByLabelText(/邮编/i);
+    const yearInput = screen.getByLabelText(/出生年/i);
 
     fireEvent.click(screen.getByRole("button", { name: /返回表单/i }));
 
-    expect(document.activeElement).toBe(postalCodeInput);
+    expect(document.activeElement).toBe(yearInput);
     expect(form.contains(document.activeElement)).toBe(true);
   });
 });
